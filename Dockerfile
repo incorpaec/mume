@@ -2,59 +2,29 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt update && apt install -y \
+    xfce4 \
+    xfce4-goodies \
+    novnc \
+    websockify \
+    x11vnc \
+    xvfb \
     wget \
     curl \
-    unzip \
-    git \
-    python3 \
-    python3-pip \
-    openjdk-17-jdk \
+    supervisor \
     adb \
-    nano \
-    iputils-ping \
-    net-tools \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    scrcpy \
+    openjdk-17-jdk \
+    python3 \
+    python3-pip
 
-# Android SDK directory
-ENV ANDROID_HOME=/opt/android-sdk
-ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+RUN mkdir ~/.vnc
 
-# Create SDK directory
-RUN mkdir -p $ANDROID_HOME/cmdline-tools
+# no password
+RUN x11vnc -storepasswd "" /root/.vnc/passwd
 
-WORKDIR /opt
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Download Android command line tools
-RUN wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+EXPOSE 8080
 
-RUN unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
-
-RUN mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-
-# Accept licenses
-RUN yes | sdkmanager --licenses
-
-# Install platform tools
-RUN sdkmanager "platform-tools" "platforms;android-34"
-
-# Install Python packages
-RUN pip3 install --no-cache-dir \
-    flask \
-    requests \
-    uiautomator2 \
-    adbutils
-
-# App directory
-WORKDIR /app
-
-# Copy files
-COPY . /app
-
-# Expose API port
-EXPOSE 5000
-
-# Start shell by default
-CMD ["bash"]
+CMD ["/usr/bin/supervisord"]
